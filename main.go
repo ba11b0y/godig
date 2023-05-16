@@ -2,94 +2,22 @@ package main
 
 import (
 	"bytes"
-	"encoding/binary"
 	"fmt"
+	"math/rand"
 	"net"
-	"reflect"
-	"strings"
 )
 
 const (
 	// TypeA is the infamous A record type
-	TypeA   = 1
-	ClassIn = 1
+	TypeA   uint16 = 1
+	ClassIn        = 1
 )
 
-// DNSHeader ...
-type DNSHeader struct {
-	ID             int
-	Flags          int
-	NumQuestion    int
-	NumAnswers     int
-	NumAuthorities int
-	NumAdditionals int
-}
-
-// ToBytes converts all field values of a DNS header to big endian two byte integers and concatenates each
-// field's two byte integer representation.
-func (header DNSHeader) ToBytes() []byte {
-	var byteData bytes.Buffer
-
-	v := reflect.ValueOf(header)
-
-	for i := 0; i < v.NumField(); i++ {
-		val := uint16(v.Field(i).Interface().(int))
-		// converting an integer(base10) to a 2-byte integer
-		// for example: 23 is converted to 17
-		b := make([]byte, 2)
-		binary.BigEndian.PutUint16(b, val)
-		byteData.Write(b)
-	}
-
-	return byteData.Bytes()
-}
-
-type DNSQuestion struct {
-	Name  []byte
-	Type  int
-	Class int
-}
-
-// ToBytes converts all field values of a DNS question to big endian two byte integers and concatenates each
-// field's two byte integer representation.
-func (question DNSQuestion) ToBytes() []byte {
-	var byteData bytes.Buffer
-
-	v := reflect.ValueOf(question)
-
-	byteData.Write(question.Name)
-
-	for i := 1; i < v.NumField(); i++ {
-		val := uint16(v.Field(i).Interface().(int))
-		b := make([]byte, 2)
-		binary.BigEndian.PutUint16(b, val)
-		byteData.Write(b)
-	}
-
-	return byteData.Bytes()
-}
-
-// DomainNameEncoder encodes domain name to bytes
-// input:  google.com
-// output: '[6 103 111 111 103 108 101 3 99 111 109 0]'
-func DomainNameEncoder(domainName string) []byte {
-	var encodedDomainName bytes.Buffer
-	parts := strings.Split(domainName, ".")
-	for _, part := range parts {
-		encodedDomainName.WriteByte(byte(len(part)))
-		encodedDomainName.Write([]byte(part))
-	}
-	emptyByte := make([]byte, 1)
-	encodedDomainName.Write(emptyByte)
-
-	return encodedDomainName.Bytes()
-}
-
 // BuildQuery builds a DNS query
-func BuildQuery(domainName string, recordType int) []byte {
+func BuildQuery(domainName string, recordType uint16) []byte {
 	encodedDomainName := DomainNameEncoder(domainName)
-	id := 33432
-	recursionDesired := 1 << 8
+	id := uint16(rand.Intn(65535))
+	recursionDesired := uint16(1 << 8)
 	header := DNSHeader{
 		ID:          id,
 		Flags:       recursionDesired,
@@ -132,6 +60,9 @@ func main() {
 		panic(err)
 	}
 
+	responseReader := bytes.NewReader(response)
+
 	// Process the response here
-	fmt.Println(response)
+	fmt.Println(parseHeader(responseReader))
+
 }
