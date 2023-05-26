@@ -37,7 +37,7 @@ func BuildQuery(domainName string, recordType uint16) []byte {
 }
 
 func main() {
-	query := BuildQuery("www.example.com", TypeA)
+	query := BuildQuery("example.com", TypeA)
 
 	// create a UDP socket
 	conn, err := net.Dial("udp", "8.8.8.8:53")
@@ -64,5 +64,6 @@ func main() {
 
 	// Process the response here
 	fmt.Println(parseHeader(responseReader))
-
+	fmt.Println(parseQuestion(responseReader))
+	fmt.Println(parseRecord(responseReader))
 }

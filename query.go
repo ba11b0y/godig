@@ -62,8 +62,8 @@ func (question DNSQuestion) ToBytes() []byte {
 }
 
 // DomainNameEncoder encodes domain name to bytes
-// input:  google.com
-// output: '[6 103 111 111 103 108 101 3 99 111 109 0]'
+// input:  www.example.com
+// output: '[3 119 119 119 7 101 120 97 109 112 108 101 3 99 111 109 0]'
 func DomainNameEncoder(domainName string) []byte {
 	var encodedDomainName bytes.Buffer
 	parts := strings.Split(domainName, ".")
