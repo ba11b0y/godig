@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"encoding/binary"
 	"io"
+	"strconv"
+	"strings"
 )
 
 type DNSRecord struct {
@@ -35,7 +37,7 @@ func parseQuestion(reader *bytes.Reader) DNSQuestion {
 		Class uint16
 	}
 
-	name := nameParser(reader)
+	name := decodeName(reader)
 
 	err := binary.Read(reader, binary.BigEndian, &typeAndClass)
 	if err != nil {
@@ -49,7 +51,7 @@ func parseQuestion(reader *bytes.Reader) DNSQuestion {
 	}
 }
 
-func nameParser(reader *bytes.Reader) []byte {
+func decodeName(reader *bytes.Reader) []byte {
 	var (
 		length byte
 		name   []byte
@@ -62,8 +64,9 @@ func nameParser(reader *bytes.Reader) []byte {
 			break
 		}
 
-		if length&128 == 1 && length&64 == 1 {
-			panic("implement compression decoder")
+		if length&0b1100_0000 != 0 {
+			name = append(decodeCompressedName(length, reader))
+			break
 		} else {
 			// find a way to read multiple bytes at once, possible reader.ReadAt()
 			for i := 0; i < int(length); i++ {
@@ -76,9 +79,20 @@ func nameParser(reader *bytes.Reader) []byte {
 	return name
 }
 
+func decodeCompressedName(length byte, reader *bytes.Reader) []byte {
+	b, _ := reader.ReadByte()
+	pointerBytes := []byte{length & 0b0011_1111, b}
+	pointer := binary.BigEndian.Uint16(pointerBytes)
+	currentPos, _ := reader.Seek(0, io.SeekCurrent)
+	reader.Seek(int64(pointer), io.SeekStart)
+	result := decodeName(reader)
+	reader.Seek(currentPos, io.SeekStart)
+	return result
+}
+
 func parseRecord(reader *bytes.Reader) DNSRecord {
 
-	name := nameParser(reader)
+	name := decodeName(reader)
 
 	var recordData struct {
 		Type    uint16
@@ -106,4 +120,17 @@ func parseRecord(reader *bytes.Reader) DNSRecord {
 		TTL:   recordData.TTL,
 		Data:  data,
 	}
+}
+
+func parseIP(data []byte) string {
+	var ip strings.Builder
+
+	for _, b := range data[0:3] {
+		// each byte is an IP segment, convert it to string and write to ip
+		ip.WriteString(strconv.Itoa(int(b)))
+		ip.WriteString(".")
+	}
+
+	ip.WriteString(strconv.Itoa(int(data[3])))
+	return ip.String()
 }

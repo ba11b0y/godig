@@ -63,7 +63,7 @@ func main() {
 	responseReader := bytes.NewReader(response)
 
 	// Process the response here
-	fmt.Println(parseHeader(responseReader))
-	fmt.Println(parseQuestion(responseReader))
-	fmt.Println(parseRecord(responseReader))
+	packet := parseDNSPacket(responseReader)
+	fmt.Printf("%+v\n", packet)
+	fmt.Println(parseIP(packet.Answers[0].Data))
 }
