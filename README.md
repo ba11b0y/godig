@@ -5,7 +5,7 @@ godig is an implementation of [DNS in a weekend](https://implement-dns.wizardzin
 ## Usage
 
 ```shell
- go run cmd/main.go
+go run cmd/main.go
  
 Querying 198.41.0.4 for twitter.com
 Querying 192.5.6.30 for twitter.com
