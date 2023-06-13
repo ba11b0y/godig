@@ -12,6 +12,40 @@ type DNSPacket struct {
 	Additionals []DNSRecord
 }
 
+// getAnswer returns the first A record in the Answer section
+func (packet DNSPacket) getAnswer() []byte {
+	for _, a := range packet.Answers {
+		if a.Type == TypeA {
+			return a.Data
+		}
+	}
+
+	return nil
+}
+
+// getNameServerIP returns the first A record in the Additionals section
+func (packet DNSPacket) getNameServerIP() []byte {
+	for _, a := range packet.Additionals {
+		if a.Type == TypeA {
+			return a.Data
+		}
+	}
+
+	return nil
+}
+
+// getNameServer returns the first NS record in the Authority section
+func (packet DNSPacket) getNameServer() string {
+	for _, a := range packet.Authorities {
+		if a.Type == TypeNS {
+			nameServerDomain := string(a.Data)
+			return nameServerDomain
+		}
+	}
+
+	return ""
+}
+
 func parseDNSPacket(reader *bytes.Reader) DNSPacket {
 	var (
 		header                            DNSHeader

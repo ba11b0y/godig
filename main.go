@@ -10,6 +10,7 @@ import (
 const (
 	// TypeA is the infamous A record type
 	TypeA   uint16 = 1
+	TypeNS  uint16 = 2
 	ClassIn        = 1
 )
 
@@ -17,10 +18,10 @@ const (
 func BuildQuery(domainName string, recordType uint16) []byte {
 	encodedDomainName := DomainNameEncoder(domainName)
 	id := uint16(rand.Intn(65535))
-	recursionDesired := uint16(1 << 8)
+	//recursionDesired := uint16(1 << 8)
 	header := DNSHeader{
 		ID:          id,
-		Flags:       recursionDesired,
+		Flags:       0, // Set Flags to 0, since we don't need recursion.
 		NumQuestion: 1,
 	}
 	question := DNSQuestion{
@@ -36,11 +37,11 @@ func BuildQuery(domainName string, recordType uint16) []byte {
 	return query.Bytes()
 }
 
-func main() {
-	query := BuildQuery("example.com", TypeA)
+func SendQuery(ip, domainName string, recordType uint16) DNSPacket {
+	query := BuildQuery(domainName, recordType)
 
 	// create a UDP socket
-	conn, err := net.Dial("udp", "8.8.8.8:53")
+	conn, err := net.Dial("udp", fmt.Sprintf("%s:53", ip))
 	if err != nil {
 		panic(err)
 	}
@@ -64,6 +65,13 @@ func main() {
 
 	// Process the response here
 	packet := parseDNSPacket(responseReader)
-	fmt.Printf("%+v\n", packet)
-	fmt.Println(parseIP(packet.Answers[0].Data))
+
+	return packet
+}
+
+func main() {
+	domainName := "twitter.com"
+	recordType := TypeA
+	ipData := resolve(domainName, recordType)
+	fmt.Printf("Resolved IP for %s is %s", domainName, parseIP(ipData))
 }
