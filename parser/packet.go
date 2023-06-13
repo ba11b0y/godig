@@ -1,4 +1,4 @@
-package main
+package parser
 
 import (
 	"bytes"
@@ -12,8 +12,8 @@ type DNSPacket struct {
 	Additionals []DNSRecord
 }
 
-// getAnswer returns the first A record in the Answer section
-func (packet DNSPacket) getAnswer() []byte {
+// GetAnswer returns the first A record in the Answer section
+func (packet DNSPacket) GetAnswer() []byte {
 	for _, a := range packet.Answers {
 		if a.Type == TypeA {
 			return a.Data
@@ -23,8 +23,8 @@ func (packet DNSPacket) getAnswer() []byte {
 	return nil
 }
 
-// getNameServerIP returns the first A record in the Additionals section
-func (packet DNSPacket) getNameServerIP() []byte {
+// GetNameServerIP returns the first A record in the Additionals section
+func (packet DNSPacket) GetNameServerIP() []byte {
 	for _, a := range packet.Additionals {
 		if a.Type == TypeA {
 			return a.Data
@@ -34,8 +34,8 @@ func (packet DNSPacket) getNameServerIP() []byte {
 	return nil
 }
 
-// getNameServer returns the first NS record in the Authority section
-func (packet DNSPacket) getNameServer() string {
+// GetNameServer returns the first NS record in the Authority section
+func (packet DNSPacket) GetNameServer() string {
 	for _, a := range packet.Authorities {
 		if a.Type == TypeNS {
 			nameServerDomain := string(a.Data)
@@ -46,7 +46,7 @@ func (packet DNSPacket) getNameServer() string {
 	return ""
 }
 
-func parseDNSPacket(reader *bytes.Reader) DNSPacket {
+func ParseDNSPacket(reader *bytes.Reader) DNSPacket {
 	var (
 		header                            DNSHeader
 		questions                         []DNSQuestion

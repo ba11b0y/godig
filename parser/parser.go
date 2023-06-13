@@ -1,4 +1,4 @@
-package main
+package parser
 
 import (
 	"bytes"
@@ -6,6 +6,13 @@ import (
 	"io"
 	"strconv"
 	"strings"
+)
+
+const (
+	// TypeA is the infamous A record type
+	TypeA   uint16 = 1
+	TypeNS  uint16 = 2
+	ClassIn        = 1
 )
 
 type DNSRecord struct {
@@ -137,7 +144,7 @@ func parseRecord(reader *bytes.Reader) DNSRecord {
 	return record
 }
 
-func parseIP(data []byte) string {
+func ParseIP(data []byte) string {
 	var ip strings.Builder
 
 	for _, b := range data[0:3] {

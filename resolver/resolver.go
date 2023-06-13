@@ -1,33 +1,31 @@
-package main
+package resolver
 
 import (
 	"bytes"
 	"fmt"
 	"math/rand"
 	"net"
+
+	"godig/parser"
 )
 
-const (
-	// TypeA is the infamous A record type
-	TypeA   uint16 = 1
-	TypeNS  uint16 = 2
-	ClassIn        = 1
-)
+// root server by Verisign, Inc. https://www.iana.org/domains/root/servers
+const rootNameServer = "198.41.0.4"
 
 // BuildQuery builds a DNS query
 func BuildQuery(domainName string, recordType uint16) []byte {
-	encodedDomainName := DomainNameEncoder(domainName)
+	encodedDomainName := parser.DomainNameEncoder(domainName)
 	id := uint16(rand.Intn(65535))
 	//recursionDesired := uint16(1 << 8)
-	header := DNSHeader{
+	header := parser.DNSHeader{
 		ID:          id,
 		Flags:       0, // Set Flags to 0, since we don't need recursion.
 		NumQuestion: 1,
 	}
-	question := DNSQuestion{
+	question := parser.DNSQuestion{
 		Name:  encodedDomainName,
 		Type:  recordType,
-		Class: ClassIn,
+		Class: parser.ClassIn,
 	}
 
 	var query bytes.Buffer
@@ -37,7 +35,7 @@ func BuildQuery(domainName string, recordType uint16) []byte {
 	return query.Bytes()
 }
 
-func SendQuery(ip, domainName string, recordType uint16) DNSPacket {
+func SendQuery(ip, domainName string, recordType uint16) parser.DNSPacket {
 	query := BuildQuery(domainName, recordType)
 
 	// create a UDP socket
@@ -64,14 +62,28 @@ func SendQuery(ip, domainName string, recordType uint16) DNSPacket {
 	responseReader := bytes.NewReader(response)
 
 	// Process the response here
-	packet := parseDNSPacket(responseReader)
+	packet := parser.ParseDNSPacket(responseReader)
 
 	return packet
 }
 
-func main() {
-	domainName := "twitter.com"
-	recordType := TypeA
-	ipData := resolve(domainName, recordType)
-	fmt.Printf("Resolved IP for %s is %s", domainName, parseIP(ipData))
+func Resolve(domainName string, recordType uint16) []byte {
+	var nameServer string
+	nameServer = rootNameServer
+	for {
+		fmt.Printf("Querying %s for %s\n", nameServer, domainName)
+		responsePacket := SendQuery(nameServer, domainName, recordType)
+		if ip := responsePacket.GetAnswer(); ip != nil {
+			return ip
+		}
+
+		if nsIP := responsePacket.GetNameServerIP(); nsIP != nil {
+			nameServer = parser.ParseIP(nsIP)
+			continue
+		}
+
+		if nsDomain := responsePacket.GetNameServer(); nsDomain != "" {
+			nameServer = parser.ParseIP(Resolve(nsDomain, parser.TypeA))
+		}
+	}
 }

@@ -4,12 +4,14 @@ import (
 	"encoding/hex"
 	"fmt"
 	"testing"
+
+	main2 "godig/parser"
 )
 
 func TestDomainNameEncoder(t *testing.T) {
 	t.Run("test domain name encoder", func(t *testing.T) {
 		expectedHexString := "06676f6f676c6503636f6d00"
-		out := DomainNameEncoder("google.com")
+		out := main2.DomainNameEncoder("google.com")
 		fmt.Println(out)
 		hexString := hex.EncodeToString(out)
 		if hexString != expectedHexString {
@@ -20,7 +22,7 @@ func TestDomainNameEncoder(t *testing.T) {
 
 func TestHeaderToBytes(t *testing.T) {
 	t.Run("test header to bytes conversion", func(t *testing.T) {
-		header := DNSHeader{
+		header := main2.DNSHeader{
 			ID:             4884,
 			Flags:          0,
 			NumQuestion:    1,
